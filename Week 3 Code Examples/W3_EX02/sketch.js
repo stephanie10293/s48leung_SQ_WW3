@@ -23,6 +23,10 @@ let winner = null; // stores "P1" or "P2" when the game ends
 // punchSounds is an array — a random one plays on each hit
 // so punches don't sound identical every time.
 // ------------------------------------------------------------
+
+let bgImage;
+
+
 let punchSounds = [];
 let winSound;
 let bgMusic;
@@ -160,7 +164,11 @@ class Fighter {
 
     // Pick a random punch sound from the array for variety
     let randomPunch = punchSounds[floor(random(punchSounds.length))];
-    randomPunch.play();
+   
+randomPunch.setVolume(0.3);
+randomPunch.rate(random(0.9, 1.3));
+randomPunch.play();
+
   }
 
   // ----------------------------------------------------------
@@ -257,11 +265,12 @@ let groundY;
 function preload() {
   // Load all 9 punch sounds into an array
   // A random one will be picked each time a punch lands
-  for (let i = 1; i <= 9; i++) {
+  for (let i = 1; i <= 4; i++) {
     punchSounds.push(loadSound("assets/sounds/punch_" + i + ".wav"));
   }
   winSound = loadSound("assets/sounds/win.wav");
   bgMusic  = loadSound("assets/sounds/background.mp3");
+  bgImage = loadImage("assets/images/background.png");
 }
 
 // ============================================================
@@ -289,7 +298,7 @@ function setupFighters() {
   fighter1 = new Fighter(
     200,
     groundY - 28,
-    color(0, 200, 180), // teal
+    color(160, 140, 255), // teal
     { left: 65, right: 68, attack: 70, block: 71 }, // A D F G
     "P1",
   );
@@ -297,7 +306,7 @@ function setupFighters() {
   fighter2 = new Fighter(
     600,
     groundY - 28,
-    color(255, 150, 30), // orange
+   color(255, 190, 140), // orange
     { left: LEFT_ARROW, right: RIGHT_ARROW, attack: 75, block: 76 }, // Arrows K L
     "P2",
   );
@@ -309,7 +318,8 @@ function setupFighters() {
 // Switches what gets drawn based on the current game state.
 // ============================================================
 function draw() {
-  background(10);
+
+image(bgImage, 0, 0, width, height);
 
   if (gameState === STATE_START) {
     drawStartScreen();
@@ -340,9 +350,10 @@ function startGame() {
   gameState = STATE_FIGHT;
   winner = null;
   setupFighters();
-  if (!bgMusic.isPlaying()) {
-    bgMusic.loop();
-  }
+ 
+bgMusic.setVolume(0);   
+bgMusic.loop();        
+bgMusic.fade(0.25, 3);  
 }
 
 // ------------------------------------------------------------
@@ -353,8 +364,14 @@ function startGame() {
 function endGame(winnerLabel) {
   gameState = STATE_WIN;
   winner = winnerLabel;
-  bgMusic.stop();
+ 
+bgMusic.fade(0, 2); 
+
+setTimeout(() => {
+  winSound.setVolume(0.5);
   winSound.play();
+}, 2000);
+
 }
 
 // ============================================================
@@ -367,27 +384,40 @@ function endGame(winnerLabel) {
 // ------------------------------------------------------------
 function drawStartScreen() {
   // Title
+
+drawingContext.shadowBlur = 20;
+drawingContext.shadowColor = "rgba(255, 200, 255, 0.5)";
+
   fill(255);
   textAlign(CENTER);
   textSize(52);
-  text("BLOB BRAWL", width / 2, height / 2 - 60);
+  text(" DREAM DUEL", width / 2, height / 2 - 60);
+  textFont("Georgia");
+  fill(255, 230, 255);
+  drawingContext.shadowBlur = 0;
 
   // Subtitle
-  fill(160);
+  drawingContext.shadowBlur = 20;
+drawingContext.shadowColor = "rgba(255, 200, 255, 0.5)";
+  fill(255);
   textSize(18);
-  text("First to land 3 hits wins", width / 2, height / 2 - 20);
+  text("two dreamers meet beneath the same sky", width / 2, height / 2 - 20);
+  textFont("Georgia");
+  fill(220, 200, 255);
+    drawingContext.shadowBlur = 0;
 
   // Controls — each player shown in their colour
   textSize(14);
-  fill(0, 200, 180);
+  fill(160, 140, 255);
   text("P1: A/D move   F attack   G block", width / 2, height / 2 + 30);
-  fill(255, 150, 30);
+  fill(255, 190, 140);
   text("P2: Arrows move   K attack   L block", width / 2, height / 2 + 55);
-
+textFont("Georgia");
   // Start prompt
   fill(255);
   textSize(16);
-  text("Press ENTER to start", width / 2, height / 2 + 110);
+  text("Press ENTER to begin the story", width / 2, height / 2 + 110);
+  textFont("Georgia");
 }
 
 // ------------------------------------------------------------
@@ -397,11 +427,11 @@ function drawStartScreen() {
 // ------------------------------------------------------------
 function drawWinScreen() {
   // Semi-transparent overlay
-  fill(0, 0, 0, 160);
+ fill(30, 10, 60, 180);
   rect(0, 0, width, height);
 
   // Winner text — shown in the winner's colour
-  fill(winner === "P1" ? color(0, 200, 180) : color(255, 150, 30));
+fill(winner === "P1" ? color(160, 140, 255) : color(255, 190, 140));
   textAlign(CENTER);
   textSize(56);
   text(winner + " WINS!", width / 2, height / 2 - 30);
@@ -417,7 +447,7 @@ function drawWinScreen() {
 // Draws the ground plane and dividing line.
 // ------------------------------------------------------------
 function drawArena() {
-  fill(40);
+  fill(80, 60, 120)
   noStroke();
   rect(0, groundY, width, height - groundY);
 
@@ -482,14 +512,14 @@ function drawHealthBars() {
   let p1W = map(fighter1.health, 0, fighter1.maxHealth, 0, barW);
   fill(40);
   rect(padding, barY, barW, barH, 4);
-  fill(0, 200, 180);
+  fill(160, 140, 255);
   rect(padding, barY, p1W, barH, 4);
 
   // Player 2 health bar — right side, fills right to left
   let p2W = map(fighter2.health, 0, fighter2.maxHealth, 0, barW);
   fill(40);
   rect(width - padding - barW, barY, barW, barH, 4);
-  fill(255, 150, 30);
+  fill(255, 190, 140);
   rect(width - padding - p2W, barY, p2W, barH, 4);
 
   // Labels
