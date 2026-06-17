@@ -20,18 +20,13 @@ Press **ENTER** to start the game and again to play another round.
 
 ## Assets
 
-The following non-original assets were used:
-
-- **Background Image**
-  - Source: Generated using Chatgpt 
-
-- **Punch Sounds (punch_1.wav – punch_4.wav)**
-  - Source: Generated using Chatgpt 
-
-- **Win Sound (win.wav)**
-  - Source: Generated using Chatgpt 
-
-- **Background Music (background.mp3)**
-  - Source: Generated using Chatgpt 
----
+| File | Source |
+|------|--------|
+| `background.png` | Generated using ChatGPT image generation (OpenAI) |
+| `punch_1.wav` | Generated using ChatGPT (OpenAI) |
+| `punch_2.wav` | Generated using ChatGPT (OpenAI) |
+| `punch_3.wav` | Generated using ChatGPT (OpenAI) |
+| `punch_4.wav` | Generated using ChatGPT (OpenAI) |
+| `win.wav` | Generated using ChatGPT (OpenAI) |
+| `background.mp3` | Generated using ChatGPT (OpenAI) |
 
