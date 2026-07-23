@@ -16,6 +16,12 @@ let punchSounds = [];
 let winSound;
 let bgMusic;
 
+let roundTime = 60;
+let timerFrame = 0;
+
+let orbX;
+let orbY;
+
 
 class Fighter {
  
@@ -34,8 +40,8 @@ class Fighter {
 
     this.controls = controls;
 
-    this.maxHealth = 3;
-    this.health = 3;
+    this.maxHealth =5;
+    this.health = 5;
 
     this.isAttacking = false;
     this.attackTimer = 0;
@@ -49,6 +55,8 @@ class Fighter {
     this.hitFlash = 0;
 
     this.hitLanded = false;
+    this.specialCooldown = 0;
+    this.specialMaxCooldown = 300;
   }
 
   
@@ -70,6 +78,9 @@ class Fighter {
     if (this.attackCooldown > 0) this.attackCooldown--;
 
     if (this.hitFlash > 0) this.hitFlash--;
+    if (this.specialCooldown > 0) {
+  this.specialCooldown--;
+}
   }
 
  
@@ -116,20 +127,39 @@ randomPunch.play();
   }
 
   
-  takeHit() {
-    if (this.isBlocking) return; 
-    this.health--;
-    this.hitFlash = 12; 
+ takeHit() {
+  if (this.isBlocking) return;
+  this.health--;
+  this.hitFlash = 12;
 
-    if (this.health <= 0) {
-      this.health = 0;
-      endGame(this.label === "P1" ? "P2" : "P1");
-    }
+  if (this.health <= 0) {
+    this.health = 0;
+    endGame(this.label === "P1" ? "P2" : "P1");
   }
+}
 
-  
-  draw() {
-    push();
+specialAttack(target) {
+
+  if (this.specialCooldown > 0) return;
+
+  this.specialCooldown = this.specialMaxCooldown;
+  this.hitFlash = 30;
+
+  let distBetween = abs(this.x - target.x);
+
+  if (distBetween < 120) {
+
+    target.takeHit();
+
+    if (target.health > 0) {
+      target.takeHit();
+    }
+
+  }
+}
+
+draw() {
+  push();
 
     if (this.isBlocking) {
       noFill();
@@ -198,7 +228,7 @@ function setupFighters() {
     200,
     groundY - 28,
     color(160, 140, 255), // teal
-    { left: 65, right: 68, attack: 70, block: 71 }, // A D F G
+    { left: 65, right: 68, attack: 70, block: 71, special: 82 }, // A D F G
     "P1",
   );
 
@@ -206,7 +236,7 @@ function setupFighters() {
     600,
     groundY - 28,
    color(255, 190, 140), // orange
-    { left: LEFT_ARROW, right: RIGHT_ARROW, attack: 75, block: 76 }, // Arrows K L
+    { left: LEFT_ARROW, right: RIGHT_ARROW, attack: 75, block: 76, special: 79 }, // Arrows K L
     "P2",
   );
 }
@@ -219,12 +249,39 @@ image(bgImage, 0, 0, width, height);
   if (gameState === STATE_START) {
     drawStartScreen();
   } else if (gameState === STATE_FIGHT) {
-    drawArena();
-    updateAndDrawFighters();
-    checkHits();
-    drawHealthBars();
-    drawFightHUD();
-  } else if (gameState === STATE_WIN) {
+
+  timerFrame++;
+
+  if (timerFrame >= 60) {
+    timerFrame = 0;
+    roundTime--;
+
+    if (roundTime <= 0) {
+
+      if (fighter1.health > fighter2.health) {
+        endGame("P1");
+      }
+      else if (fighter2.health > fighter1.health) {
+        endGame("P2");
+      }
+      else {
+        endGame("DRAW");
+      }
+
+    }
+  }
+
+  drawArena();
+updateAndDrawFighters();
+checkHits();
+
+drawOrb();
+checkOrbCollection();
+
+drawHealthBars();
+drawTimer();
+drawFightHUD();
+} else if (gameState === STATE_WIN) {
     drawArena();
     fighter1.draw();
     fighter2.draw();
@@ -232,15 +289,36 @@ image(bgImage, 0, 0, width, height);
   }
 }
 
+function drawTimer() {
+
+  fill(255);
+  textAlign(CENTER);
+
+  textSize(12);
+  text("TIME", width / 2, 25);
+
+  textSize(28);
+  text(roundTime, width / 2, 55);
+
+}
 
 function startGame() {
   gameState = STATE_FIGHT;
   winner = null;
+
+  roundTime = 60;
+  timerFrame = 0;
+
   setupFighters();
- 
-bgMusic.setVolume(0);   
-bgMusic.loop();        
-bgMusic.fade(0.25, 3);  
+
+  orbX = random(100, width - 100);
+orbY = groundY - 50;
+
+  bgMusic.setVolume(0);
+  bgMusic.loop();
+  bgMusic.fade(0.25, 3);
+
+  
 }
 
 
@@ -282,10 +360,9 @@ drawingContext.shadowColor = "rgba(255, 200, 255, 0.5)";
 
   textSize(14);
   fill(160, 140, 255);
-  text("P1: A/D move   F attack   G block", width / 2, height / 2 + 30);
-  fill(255, 190, 140);
-  text("P2: Arrows move   K attack   L block", width / 2, height / 2 + 55);
-textFont("Georgia");
+text("P1: A/D move   F attack   G block   R special", width / 2, height / 2 + 30);  
+fill(255, 190, 140);
+text("P2: Arrows move   K attack   L block   O special", width / 2, height / 2 + 55);textFont("Georgia");
   fill(255);
   textSize(16);
   text("Press ENTER to begin the story", width / 2, height / 2 + 110);
@@ -297,10 +374,25 @@ function drawWinScreen() {
  fill(30, 10, 60, 180);
   rect(0, 0, width, height);
 
-fill(winner === "P1" ? color(160, 140, 255) : color(255, 190, 140));
-  textAlign(CENTER);
-  textSize(56);
+textAlign(CENTER);
+textSize(56);
+
+if (winner === "DRAW") {
+
+  fill(255);
+  text("DRAW!", width / 2, height / 2 - 30);
+
+} else {
+
+  fill(
+    winner === "P1"
+      ? color(160, 140, 255)
+      : color(255, 190, 140)
+  );
+
   text(winner + " WINS!", width / 2, height / 2 - 30);
+}
+
 
   fill(255);
   textSize(18);
@@ -316,14 +408,57 @@ function drawArena() {
   stroke(80);
   strokeWeight(1);
   line(0, groundY, width, groundY);
+  
 }
 
+function drawOrb() {
+
+  fill(255, 120, 200);
+  stroke(255);
+
+  ellipse(orbX, orbY, 25, 25);
+
+}
 
 function updateAndDrawFighters() {
   fighter1.update();
   fighter2.update();
   fighter1.draw();
   fighter2.draw();
+}
+
+function checkOrbCollection() {
+
+  let d1 = dist(fighter1.x, fighter1.y, orbX, orbY);
+
+  if (d1 < 40) {
+
+    fighter1.health = min(
+      fighter1.health + 1,
+      fighter1.maxHealth
+    );
+
+    moveOrb();
+  }
+
+  let d2 = dist(fighter2.x, fighter2.y, orbX, orbY);
+
+  if (d2 < 40) {
+
+    fighter2.health = min(
+      fighter2.health + 1,
+      fighter2.maxHealth
+    );
+
+    moveOrb();
+  }
+}
+
+function moveOrb() {
+
+  orbX = random(100, width - 100);
+  orbY = groundY - 50;
+
 }
 
 
@@ -385,9 +520,9 @@ function drawFightHUD() {
   fill(120);
   textSize(12);
   textAlign(LEFT);
-  text("A/D move   F attack   G block", 16, height - 12);
+text("A/D move   F attack   G block   R special", 16, height - 12);
   textAlign(RIGHT);
-  text("Arrows move   K attack   L block", width - 16, height - 12);
+text("Arrows move   K attack   L block   O special", width - 16, height - 12);
 }
 
 
@@ -405,4 +540,11 @@ function keyPressed() {
   if (keyCode === 75 && gameState === STATE_FIGHT) {
     fighter2.startAttack(fighter1.x);
   }
+  if (keyCode === 82 && gameState === STATE_FIGHT) {
+  fighter1.specialAttack(fighter2);
+}
+
+if (keyCode === 79 && gameState === STATE_FIGHT) {
+  fighter2.specialAttack(fighter1);
+}
 }
